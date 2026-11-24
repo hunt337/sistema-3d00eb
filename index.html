@@ -1,0 +1,1305 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07051a">
+<meta name="robots" content="noindex, nofollow">
+<title>Система MM Ярый</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Unbounded:wght@600;700;800&display=swap">
+<style>
+:root{
+  /* Layout: full-bleed canvas constellation of the system; glass caption card docks to the bottom on phones and to the left on wide screens; node details slide in as a sheet */
+  --ink:#07051a;
+  --glass:rgba(16,11,38,.80);
+  --glass-2:rgba(30,22,66,.62);
+  --line:rgba(176,150,255,.16);
+  --line-2:rgba(176,150,255,.32);
+  --fg:#f4f0ff;
+  --soft:#ddd5ff;
+  --muted:#b3a9d9;
+  --dim:#7d74a6;
+  --violet:#9d7bff;
+  --magenta:#ff5ad9;
+  --amber:#ffb547;
+  --mint:#3eeaa8;
+  --cyan:#4fe3ff;
+  --coral:#ff6b7d;
+  --rose:#ffd3ec;
+  --on-accent:#14092a;
+  --accent:var(--magenta);
+  --f-display:"Unbounded","Golos Text",system-ui,sans-serif;
+  --f-body:"Golos Text",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--ink);color:var(--fg);overflow:hidden;overscroll-behavior:none}
+body{font:15px/1.5 var(--f-body);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+#map{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#map.dragging{cursor:grabbing}
+#map.hover{cursor:pointer}
+
+/* ---------- header + ticker ---------- */
+.top{position:fixed;left:0;right:0;top:0;z-index:5;padding-top:env(safe-area-inset-top,0px);pointer-events:none;
+  background:linear-gradient(180deg,rgba(7,5,26,.95) 0%,rgba(7,5,26,.75) 65%,rgba(7,5,26,0) 100%)}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;height:52px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.brand{display:flex;align-items:center;gap:10px;font:800 14px/1 var(--f-display);letter-spacing:.08em;white-space:nowrap}
+.brand svg{width:26px;height:26px;flex:none;filter:drop-shadow(0 0 8px rgba(255,90,217,.65))}
+.brand em{font:700 10px/1 var(--f-mono);font-style:normal;color:var(--muted);letter-spacing:.16em;text-transform:uppercase;padding:5px 8px;border:1px solid var(--line-2);border-radius:999px}
+.mode{pointer-events:auto;display:flex;align-items:center;gap:8px;height:34px;padding:0 14px;border-radius:999px;border:1px solid var(--line-2);
+  background:rgba(20,14,46,.72);font:600 13px/1 var(--f-body);color:var(--fg);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.mode svg{width:16px;height:16px}
+.ticker{overflow:hidden;height:26px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+.ticker-track{display:flex;width:max-content;animation:tick 70s linear infinite;font:700 11px/25px var(--f-mono);letter-spacing:.16em;color:#d9ceff;white-space:nowrap}
+.ticker-track span{padding-right:0}
+.ticker b{color:var(--magenta);font-weight:700;padding:0 14px}
+.ticker i{font-style:normal;color:var(--dim);padding:0 8px}
+@keyframes tick{to{transform:translateX(-50%)}}
+
+/* ---------- caption card ---------- */
+.card{position:fixed;z-index:4;left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));
+  bottom:calc(10px + env(safe-area-inset-bottom,0px));max-height:56vh;max-height:56dvh;display:flex;flex-direction:column;
+  border-radius:24px;background:var(--glass);border:1px solid var(--line);
+  -webkit-backdrop-filter:blur(18px) saturate(140%);backdrop-filter:blur(18px) saturate(140%);
+  box-shadow:0 24px 70px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06);
+  transition:transform .55s cubic-bezier(.2,.8,.2,1),opacity .4s;touch-action:pan-y}
+.card.off{transform:translateY(calc(100% + 40px));opacity:0;pointer-events:none}
+.card-body{overflow-y:auto;padding:18px 20px 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.card-body::-webkit-scrollbar{display:none}
+.card-body>*{animation:rise .6s cubic-bezier(.2,.8,.2,1) both}
+.card-body>*:nth-child(2){animation-delay:.05s}
+.card-body>*:nth-child(3){animation-delay:.1s}
+.card-body>*:nth-child(4){animation-delay:.15s}
+.card-body>*:nth-child(5){animation-delay:.2s}
+.card-body>*:nth-child(n+6){animation-delay:.25s}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.eyebrow{display:flex;align-items:center;gap:8px;font:700 10.5px/1 var(--f-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+.eyebrow span{white-space:nowrap}
+.eyebrow span:last-of-type{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.eyebrow .n{color:var(--fg)}
+.eyebrow .of{color:var(--dim)}
+.eyebrow::after{content:"";flex:1;min-width:12px;height:1px;background:linear-gradient(90deg,var(--line-2),transparent)}
+h1,h2{font-family:var(--f-display);font-weight:700;letter-spacing:-.01em;text-wrap:balance;margin:12px 0 10px;color:var(--fg)}
+h1{font-size:clamp(23px,6.4vw,34px);line-height:1.1}
+h2{font-size:clamp(20px,5.4vw,28px);line-height:1.14}
+.lead{color:var(--soft);margin:0 0 12px;max-width:60ch;font-size:15px}
+.pts{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:8px}
+.pts li{position:relative;padding-left:22px;color:var(--muted);font-size:14px;line-height:1.45}
+.pts li::before{content:"";position:absolute;left:2px;top:.36em;width:10px;height:11px;background:var(--accent);
+  -webkit-clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)}
+.pts b{color:var(--fg);font-weight:600}
+.kicker{margin:12px 0 6px;padding:11px 13px;border-radius:14px;background:color-mix(in srgb,var(--accent) 10%,transparent);
+  border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);font-weight:600;color:var(--fg);font-size:14px;line-height:1.45}
+.hint{margin:10px 0 4px;font:700 10.5px/1.4 var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:4px 0 12px}
+.stat{padding:11px 12px 10px;border-radius:16px;background:var(--glass-2);border:1px solid var(--line);min-width:0}
+.stat b{display:block;font:800 24px/1 var(--f-display);font-variant-numeric:tabular-nums;color:var(--fg);white-space:nowrap;
+  text-shadow:0 0 18px color-mix(in srgb,var(--c) 75%,transparent)}
+.stat span{display:flex;align-items:center;gap:6px;margin-top:7px;font-size:12px;line-height:1.3;color:var(--muted)}
+.stat span::before{content:"";flex:none;width:7px;height:7px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:2px 0 4px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend svg{width:14px;height:14px;flex:none}
+.nav{display:flex;align-items:center;gap:10px;padding:10px 12px 12px;border-top:1px solid var(--line)}
+.ghost{width:42px;height:42px;border-radius:50%;border:1px solid var(--line-2);display:grid;place-items:center;flex:none;transition:background .2s}
+.ghost:hover{background:var(--glass-2)}
+.ghost:disabled{opacity:.28;cursor:default}
+.ghost svg{width:18px;height:18px}
+.dots{flex:1;display:flex;justify-content:center;flex-wrap:wrap;min-width:0}
+.dots button{padding:10px 2px;display:grid;place-items:center}
+.dots button i{display:block;width:6px;height:6px;border-radius:99px;background:rgba(255,255,255,.2);transition:width .35s,background .35s}
+.dots button[aria-current="step"] i{width:20px;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+.next{height:42px;padding:0 16px 0 18px;border-radius:999px;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:14px;
+  display:flex;align-items:center;gap:6px;flex:none;white-space:nowrap;box-shadow:0 0 26px color-mix(in srgb,var(--accent) 50%,transparent);transition:transform .15s}
+.next:active{transform:scale(.97)}
+.next svg{width:16px;height:16px}
+.again{margin-top:6px;display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 14px;border-radius:999px;border:1px solid var(--line-2);font-weight:600;font-size:13.5px}
+.again svg{width:15px;height:15px}
+
+/* ---------- day clock ---------- */
+.clock{display:flex;align-items:center;gap:14px;margin:4px 0 8px}
+.clock-time{font:800 38px/1 var(--f-display);font-variant-numeric:tabular-nums;color:var(--fg);text-shadow:0 0 24px rgba(79,227,255,.5);min-width:4.2ch}
+.clock-meta{display:grid;gap:5px;font:700 10.5px/1.2 var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.clock-meta span:first-child{color:var(--cyan)}
+.clock .ghost{margin-left:auto}
+.tl{position:relative;height:44px;margin:2px 0 10px;cursor:pointer;touch-action:none}
+.tl-track{position:absolute;left:0;right:0;top:6px;height:20px;border-radius:10px;border:1px solid var(--line);
+  background:linear-gradient(90deg,#0a0720 0%,#130e33 20%,#2a1f66 50%,#130e33 80%,#0a0720 100%)}
+.tl-tick{position:absolute;top:4px;width:2px;height:10px;border-radius:2px;background:var(--c);box-shadow:0 0 6px var(--c);margin-left:-1px}
+.tl-head{position:absolute;top:0;width:3px;height:32px;margin-left:-1.5px;background:#fff;box-shadow:0 0 12px #fff,0 0 2px #fff;border-radius:3px}
+.tl-hours{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;font:500 10px/1 var(--f-mono);color:var(--dim)}
+.feed{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:7px;min-height:92px}
+.feed li{display:flex;gap:10px;align-items:baseline;font-size:13.5px;line-height:1.35;color:var(--muted);animation:rise .45s both}
+.feed li:first-child{color:var(--fg)}
+.feed time{flex:none;font:700 12px/1 var(--f-mono);color:var(--c);min-width:40px}
+.note{margin:0;font-size:12.5px;color:var(--dim);line-height:1.45}
+
+/* ---------- free mode bar ---------- */
+.freebar{position:fixed;z-index:4;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+  display:flex;align-items:center;gap:6px;padding:6px;border-radius:999px;background:var(--glass);border:1px solid var(--line-2);
+  -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);white-space:nowrap;max-width:calc(100% - 24px)}
+.freebar[hidden]{display:none}
+.freebar span{padding:0 8px 0 10px;font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis}
+.freebar button{height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line-2);font-weight:600;font-size:13px;flex:none}
+.freebar .primary{background:var(--magenta);color:var(--on-accent);border-color:transparent}
+
+/* ---------- node sheet ---------- */
+.sheet{position:fixed;z-index:8;left:0;right:0;bottom:0;max-height:74vh;max-height:74dvh;overflow:auto;--c:var(--violet);
+  padding:22px max(20px,env(safe-area-inset-right,0px)) calc(22px + env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px));
+  border-radius:26px 26px 0 0;background:rgba(13,9,32,.95);border:1px solid var(--line-2);border-bottom:0;
+  -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);transform:translateY(105%);visibility:hidden;
+  transition:transform .45s cubic-bezier(.2,.8,.2,1),visibility 0s linear .45s;box-shadow:0 -24px 70px rgba(0,0,0,.55)}
+.sheet.open{transform:none;visibility:visible;transition:transform .45s cubic-bezier(.2,.8,.2,1),visibility 0s}
+.sheet::before{content:"";display:block;width:40px;height:4px;border-radius:4px;background:var(--line-2);margin:-8px auto 14px}
+.sheet::after{content:"";position:absolute;left:0;right:0;top:0;height:120px;pointer-events:none;border-radius:inherit;
+  background:radial-gradient(120% 100% at 20% 0%,color-mix(in srgb,var(--c) 22%,transparent),transparent 70%)}
+.sheet-x{position:absolute;z-index:1;right:14px;top:14px;width:36px;height:36px;border-radius:50%;border:1px solid var(--line-2);display:grid;place-items:center;background:rgba(13,9,32,.6)}
+.sheet-x svg{width:16px;height:16px}
+.s-kind{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:8px;align-items:center;font:700 10.5px/1 var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--c);padding-right:44px}
+.s-tag{padding:5px 9px;border:1px solid var(--c);border-radius:999px}
+.sheet h3{position:relative;z-index:1;font:700 24px/1.15 var(--f-display);margin:12px 0 4px;padding-right:40px}
+.s-sub{margin:0 0 12px;color:var(--muted);font-size:14px}
+.s-desc{margin:0 0 18px;font-size:15.5px;line-height:1.55;color:#ebe5ff;max-width:60ch}
+.sheet dl{display:grid;gap:14px;margin:0}
+.sheet dt{font:700 10px/1 var(--f-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:7px}
+.sheet dd{margin:0;font-size:14px;color:var(--fg)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border-radius:999px;border:1px solid var(--line-2);background:var(--glass-2);font-size:13px;line-height:1}
+.chip:hover{border-color:var(--c)}
+.chip i{width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c)}
+.none{color:var(--dim)}
+
+/* ---------- no-JS fallback ---------- */
+.fallback{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:24px;background:radial-gradient(120% 80% at 70% 10%,#2a1260 0%,#07051a 60%);text-align:center}
+.fallback div{max-width:34ch}
+.fallback h1{font-size:26px}
+.fallback p{color:var(--soft)}
+
+/* ---------- wide screens ---------- */
+@media (min-width:820px) and (min-aspect-ratio:11/10){
+  .card{left:max(24px,env(safe-area-inset-left,0px));right:auto;top:100px;bottom:auto;width:410px;max-height:calc(100vh - 124px);max-height:calc(100dvh - 124px)}
+  .card-body{padding:26px 28px 12px}
+  .nav{padding:12px 16px 16px}
+  h1{font-size:34px}
+  h2{font-size:28px}
+  .lead{font-size:16px}
+  .pts li{font-size:14.5px}
+  .sheet{left:auto;right:24px;top:100px;bottom:auto;width:390px;max-height:calc(100vh - 124px);max-height:calc(100dvh - 124px);
+    border-radius:24px;border-bottom:1px solid var(--line-2);transform:translateX(calc(100% + 48px))}
+  .sheet::before{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .ticker-track,.card-body>*,.feed li{animation:none}
+  .card,.sheet{transition:none}
+}
+</style>
+</head>
+<body>
+<canvas id="map" aria-label="Анимированная карта системы MM Ярый: источники данных, роботы, результаты и люди"></canvas>
+
+<header class="top">
+  <div class="bar">
+    <div class="brand">
+      <svg viewBox="0 0 26 26" aria-hidden="true"><polygon points="13,1.5 23,7.25 23,18.75 13,24.5 3,18.75 3,7.25" fill="none" stroke="#ff5ad9" stroke-width="2"/><circle cx="13" cy="13" r="4" fill="#ff5ad9"/></svg>
+      <span>MM ЯРЫЙ</span><em>система</em>
+    </div>
+    <button class="mode" id="modeBtn" type="button"></button>
+  </div>
+  <div class="ticker" aria-hidden="true"><div class="ticker-track" id="ticker"></div></div>
+</header>
+
+<section class="card" id="card" aria-live="polite">
+  <div class="card-body" id="cardBody"></div>
+  <nav class="nav" aria-label="Шаги презентации">
+    <button class="ghost" id="prev" type="button" aria-label="Назад"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="dots" id="dots"></div>
+    <button class="next" id="next" type="button"><span id="nextLabel">Дальше</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button>
+  </nav>
+</section>
+
+<div class="freebar" id="freebar" hidden>
+  <span>Нажми на любой узел</span>
+  <button type="button" id="fitBtn">Вся карта</button>
+  <button type="button" id="tourBtn" class="primary">Тур</button>
+</div>
+
+<aside class="sheet" id="sheet" aria-hidden="true">
+  <button class="sheet-x" id="sheetX" type="button" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <div class="s-kind" id="sKind"></div>
+  <h3 id="sName"></h3>
+  <p class="s-sub" id="sSub"></p>
+  <p class="s-desc" id="sDesc"></p>
+  <dl>
+    <div id="sWhenRow"><dt>Когда</dt><dd id="sWhen"></dd></div>
+    <div><dt>Берёт из</dt><dd class="chips" id="sIn"></dd></div>
+    <div><dt>Отдаёт в</dt><dd class="chips" id="sOut"></dd></div>
+  </dl>
+</aside>
+
+<div class="fallback" id="fallback">
+  <div>
+    <h1>Система MM Ярый</h1>
+    <p>Здесь анимированная карта: кто что делает в нашей системе. Этот просмотрщик не запускает анимацию — открой файл в Safari или Chrome.</p>
+  </div>
+</div>
+
+<script>
+(function () {
+'use strict';
+document.getElementById('fallback').remove();
+
+/* =========================================================
+   DATA — кто что делает. Расписание — реальные таймеры (МСК).
+   ========================================================= */
+const KIND = {
+  src:    { c: '#ffb547', name: 'Источник данных' },
+  hub:    { c: '#ff5ad9', name: 'Сердце системы' },
+  bot:    { c: '#9d7bff', name: 'Робот' },
+  ai:     { c: '#4fe3ff', name: 'Робот с ИИ' },
+  guard:  { c: '#ff6b7d', name: 'Охрана' },
+  out:    { c: '#3eeaa8', name: 'Результат' },
+  person: { c: '#ffd3ec', name: 'Люди' },
+};
+const hexRgb = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+for (const k in KIND) KIND[k].rgb = hexRgb(KIND[k].c);
+const rgba = (r, a) => 'rgba(' + Math.round(r[0]) + ',' + Math.round(r[1]) + ',' + Math.round(r[2]) + ',' + a + ')';
+
+const ICON_SRC = {
+  bag: 'M5 8h14l-1.2 12.2a1 1 0 0 1-1 .8H7.2a1 1 0 0 1-1-.8z M9 8V6.5a3 3 0 0 1 6 0V8',
+  bank: 'M3 9.5L12 4l9 5.5 M5 10.5v7 M9.5 10.5v7 M14.5 10.5v7 M19 10.5v7 M3 20h18',
+  chat: 'M4 5.5h16v10.5H10l-4.5 3.5V16H4z M8 9.5h8 M8 12.5h5',
+  coins: 'M12 4c3.9 0 7 1.3 7 3s-3.1 3-7 3-7-1.3-7-3 3.1-3 7-3z M5 7v5c0 1.7 3.1 3 7 3s7-1.3 7-3V7 M5 12v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5',
+  book: 'M5 4.5h11a2 2 0 0 1 2 2V20H7a2 2 0 0 1-2-2z M5 18a2 2 0 0 1 2-2h11 M9 8.5h5',
+  cycle: 'M19.5 12a7.5 7.5 0 0 1-12.9 5.2 M4.5 12a7.5 7.5 0 0 1 12.9-5.2 M17.5 3.5v3.3h-3.3 M6.5 20.5v-3.3h3.3',
+  list: 'M9 6.5h11 M9 12h11 M9 17.5h11 M4.5 6.5h.01 M4.5 12h.01 M4.5 17.5h.01',
+  scan: 'M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8 M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8 M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16 M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16 M8 8.5v7 M11 8.5v7 M13.5 8.5v7 M16 8.5v7',
+  box: 'M12 3.5l8 4.5v8l-8 4.5-8-4.5V8z M4 8l8 4.5L20 8 M12 12.5v8',
+  tag: 'M3.5 12.2V4.5a1 1 0 0 1 1-1h7.7l8.3 8.3a1.5 1.5 0 0 1 0 2.1l-6.4 6.4a1.5 1.5 0 0 1-2.1 0z M8 8h.01',
+  chart: 'M4 20h16 M6 16l4-4.5 3 3L19 8 M15 8h4v4',
+  wallet: 'M4 7.5h15a1 1 0 0 1 1 1V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z M4 7.5L15.5 4v3.5 M15.5 13.5h2',
+  layers: 'M12 4l8.5 4.5L12 13 3.5 8.5z M3.5 12.5L12 17l8.5-4.5 M3.5 16.5L12 21l8.5-4.5',
+  calendar: 'M4.5 6h15v14h-15z M4.5 10h15 M8.5 3.5v4 M15.5 3.5v4 M8 14h2 M12 14h2 M8 17h2',
+  mega: 'M4 10v4a1 1 0 0 0 1 1h3l6 4V5L8 9H5a1 1 0 0 0-1 1z M17.5 9a4 4 0 0 1 0 6 M20 6.5a7.5 7.5 0 0 1 0 11',
+  spark: 'M12 3.5l1.9 5.6 5.6 1.9-5.6 1.9L12 18.5l-1.9-5.6-5.6-1.9 5.6-1.9z M19 3v3.5 M17.25 4.75h3.5 M5.5 17v3.5 M3.75 18.75h3.5',
+  percent: 'M18.5 5.5l-13 13 M7.5 5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5z M16.5 14a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5z',
+  userchat: 'M10 4a3.5 3.5 0 1 0 0 7a3.5 3.5 0 1 0 0-7z M3.5 20a6.5 6.5 0 0 1 10.5-5.1 M15 13h6v4.5h-2.5L16.5 19.5v-2H15z',
+  funnel: 'M3.5 4.5h17l-6.5 7.5v6l-4 2.5V12z',
+  undo: 'M9 14.5L4 9.5l5-5 M4 9.5h10.5a5.5 5.5 0 0 1 0 11H11',
+  search: 'M10.5 4a6.5 6.5 0 1 0 0 13a6.5 6.5 0 1 0 0-13z M15.5 15.5L20.5 20.5',
+  office: 'M5 20.5V4.5h9v16 M14 9.5h5v11 M8 8h3 M8 11.5h3 M8 15h3 M3.5 20.5h17',
+  bolt: 'M13.5 3L5 13.5h6.5L10.5 21 19 10.5h-6.5z',
+  shield: 'M12 3.5l7.5 3v5.5c0 4.5-3.2 7.6-7.5 8.5-4.3-.9-7.5-4-7.5-8.5V6.5z M9 12l2.2 2.2L15.5 10',
+  archive: 'M3.5 4.5h17v4h-17z M5 8.5v11h14v-11 M10 12.5h4',
+  grid: 'M4.5 4.5h15v15h-15z M4.5 9.5h15 M4.5 14.5h15 M9.5 4.5v15',
+  monitor: 'M3.5 4.5h17v11.5h-17z M8.5 20h7 M12 16v4',
+  send: 'M20.5 3.5L3.5 10.5l6.5 2.5 2.5 6.5z M10 13l10.5-9.5',
+  db: 'M12 3.5c4.1 0 7.5 1.3 7.5 3s-3.4 3-7.5 3-7.5-1.3-7.5-3 3.4-3 7.5-3z M4.5 6.5v11c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3v-11 M4.5 12c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3',
+  user: 'M12 4a4 4 0 1 0 0 8a4 4 0 1 0 0-8z M4.5 20.5a7.5 7.5 0 0 1 15 0',
+  users: 'M9 5a3.5 3.5 0 1 0 0 7a3.5 3.5 0 1 0 0-7z M2.5 20a6.5 6.5 0 0 1 13 0 M16 5.2a3.3 3.3 0 0 1 0 6.4 M18 14.5a6 6 0 0 1 3.5 5.5',
+};
+const ICON = {};
+for (const k in ICON_SRC) ICON[k] = new Path2D(ICON_SRC[k]);
+
+/* clusters: p = portrait (phone), l = landscape (wide) */
+const CLUSTERS = {
+  src:    { label: 'ИСТОЧНИКИ ДАННЫХ', p: [0, 0],    l: [0, -720] },
+  hub:    { label: '',                 p: [0, 580],  l: [0, 0] },
+  goods:  { label: 'ТОВАР',            p: [0, 1080], l: [-830, -720] },
+  money:  { label: 'ДЕНЬГИ',           p: [0, 1600], l: [830, -720] },
+  sales:  { label: 'ПРОДАЖИ И РЕКЛАМА', p: [0, 2200], l: [830, 0] },
+  loss:   { label: 'ВОЗВРАТЫ И ПОТЕРИ', p: [0, 2780], l: [-830, 0] },
+  guard:  { label: 'ОХРАНА',           p: [0, 3280], l: [-830, 720] },
+  out:    { label: 'КУДА ПРИХОДИТ',    p: [0, 3780], l: [0, 720] },
+  people: { label: 'ЛЮДИ',             p: [0, 4260], l: [830, 720] },
+};
+
+const NODES = [
+  // ---------- источники ----------
+  { id: 'wb', k: 'src', cl: 'src', at: [0, -10], r: 46, ic: 'bag', name: 'Кабинеты ВБ', sub: 'Wildberries', tag: '7 КАБИНЕТОВ',
+    desc: 'Заказы, остатки, отчёты, реклама, возвраты и вопросы покупателей всех 7 магазинов. Роботы забирают это сами: без выгрузок и копирования.',
+    when: 'постоянно, у каждого робота своё расписание', rate: .5 },
+  { id: 'banks', k: 'src', cl: 'src', at: [-215, 30], ic: 'bank', name: 'Банки', sub: '3 банка', tag: 'СЧЕТА',
+    desc: 'Модульбанк, Точка и Т-Бизнес: выписки и остатки на расчётных счетах. Видно, сколько пришло от ВБ и сколько ушло.',
+    when: 'снимок счетов к ночному срезу в 00:20', rate: .2 },
+  { id: 'chats', k: 'src', cl: 'src', at: [215, 30], ic: 'chat', name: 'Рабочие чаты', sub: 'Telegram', tag: '4 РАЗА В ДЕНЬ',
+    desc: 'Переписка с поставщиками и офисом. Отсюда роботы берут продажи и отгрузки офиса, их больше не переписывают руками.',
+    when: '07:52, 13:52, 19:52 и 23:30', rate: .2 },
+  { id: 'kassa', k: 'src', cl: 'src', at: [-125, 255], ic: 'coins', name: 'Касса', sub: 'наличные и клиенты', tag: '5 МИН',
+    desc: 'Книга «Касса»: наличные и балансы клиентов. Баланс клиентов обновляется сам каждые 5 минут.',
+    when: 'каждые 5 минут', rate: .35 },
+  { id: 'supplier', k: 'src', cl: 'src', at: [125, 255], ic: 'book', name: 'Книга поставщика', sub: 'себес и возвраты', tag: 'В ОБЕ СТОРОНЫ',
+    desc: 'Общая книга с поставщиком. Себестоимость и возвраты ходят в обе стороны: что внёс он, видим мы, что внесли мы, видит он.',
+    when: 'в каждом обходе Диспетчера, возвраты каждые 15 минут', rate: .3 },
+
+  // ---------- сердце ----------
+  { id: 'dispatch', k: 'hub', cl: 'hub', at: [0, 0], r: 62, ic: 'cycle', name: 'Диспетчер', sub: 'обход 7 магазинов', tag: 'КАЖДУЮ МИНУТУ',
+    desc: 'Сердце системы. Раз в минуту берёт следующий магазин и прогоняет цепочку: себестоимость, заказы, остатки, отчёт месяца, финучёт. Пока один магазин не закончен, следующий не начнётся, поэтому данные не перемешиваются.',
+    when: 'каждую минуту, круглые сутки' },
+
+  // ---------- товар ----------
+  { id: 'orders', k: 'bot', cl: 'goods', at: [-135, -120], ic: 'list', name: 'Учётчик заказов', sub: 'База заказов FBS', tag: 'В ОБХОДЕ',
+    desc: 'Каждое задание FBS строкой в «Базе заказов»: что продали, когда, по какой цене и с какой себестоимостью. Старые заказы ВБ уже не отдаёт, а у нас они остаются.',
+    when: 'в каждом обходе Диспетчера, судьба заданий раз в час', rate: .25 },
+  { id: 'cost', k: 'bot', cl: 'goods', at: [135, -120], ic: 'tag', name: 'Оценщик себеса', sub: 'История отгрузок', tag: 'В ОБХОДЕ',
+    desc: 'Цену закупки вносят один раз, а он разносит её по всем таблицам и в книгу поставщика. У каждой единицы своя цена: по номеру задания и стикеру.',
+    when: 'в каждом обходе Диспетчера, сводка раз в час', rate: .25 },
+  { id: 'prijom', k: 'bot', cl: 'goods', at: [-135, 120], ic: 'scan', name: 'Приёмщик', sub: 'дата приёмки на ВБ', tag: 'КАЖДУЮ МИНУТУ',
+    desc: 'Следит, когда ВБ отсканировал наш товар, и ставит дату в таблицу. Нет даты, значит ВБ товар ещё не принял, и это видно сразу.',
+    when: 'каждую минуту, по одному магазину', rate: .7 },
+  { id: 'stock', k: 'bot', cl: 'goods', at: [135, 120], ic: 'box', name: 'Кладовщик', sub: 'Товар на ВБ', tag: 'В ОБХОДЕ',
+    desc: 'Знает, где каждая единица: едет на склад, лежит у ВБ, продана или вернулась. ВБ переклеил стикер, и это он тоже запишет.',
+    when: 'в каждом обходе Диспетчера', rate: .25 },
+
+  // ---------- деньги ----------
+  { id: 'fin', k: 'bot', cl: 'money', at: [-135, -120], ic: 'chart', name: 'Финансист', sub: 'отчёты ВБ, финучёт', tag: 'ПН 10:00',
+    desc: 'По понедельникам сам разносит недельные отчёты ВБ по 7 магазинам, сверяет с кабинетом и пересчитывает «Финансовый учёт». Не сошлось, повторит через час. Платежи по кредитам ставит по графику.',
+    when: 'понедельник 10:00–10:30, повтор 13:00–13:30; сверка с кабинетом каждый час', rate: .15 },
+  { id: 'treasury', k: 'bot', cl: 'money', at: [135, -120], ic: 'wallet', name: 'Казначей', sub: 'счета и касса', tag: '5 МИН',
+    desc: 'Следит за деньгами на счетах и в кассе. В боте показывает ликвидность: сколько можно потратить сегодня и хватит ли на закупку.',
+    when: 'касса каждые 5 минут, ликвидность считается ночью', rate: .35 },
+  { id: 'plan', k: 'bot', cl: 'money', at: [-135, 120], ic: 'calendar', name: 'Планировщик', sub: 'прогноз и платежи', tag: '15:30',
+    desc: 'Прогноз прибыли по 7 магазинам, книга «Оборот», график платежей: маркетинг и налоги. Новый месяц в таблицах заводит сам, за неделю до смены.',
+    when: '«Оборот» в 15:00, прогноз в 15:30, график платежей каждый час', rate: .15 },
+  { id: 'srez', k: 'bot', cl: 'money', at: [135, 120], ic: 'layers', name: 'Срез «Точки А»', sub: 'было → стало', tag: '00:20',
+    desc: 'Каждую ночь фиксирует состояние бизнеса: сколько было товара и денег, что пришло и ушло, сколько стало. Прошлые дни роботы не переписывают.',
+    when: 'каждую ночь в 00:20', rate: .08 },
+
+  // ---------- продажи ----------
+  { id: 'adv', k: 'bot', cl: 'sales', at: [-135, -200], ic: 'mega', name: 'Рекламщик', sub: 'статистика рекламы', tag: '3 РАЗА В ДЕНЬ',
+    desc: 'Собирает расходы и результаты рекламы по всем магазинам и поисковые фразы за неделю.',
+    when: '07:20, 13:20 и 19:20; фразы в 07:40', rate: .12 },
+  { id: 'spp', k: 'bot', cl: 'sales', at: [135, -200], ic: 'percent', name: 'СПП', sub: 'скидка ВБ', tag: '5 МИН',
+    desc: 'Следит за скидкой ВБ на наши карточки. Скидка сдвинулась, приходит письмо: двигай цену в кабинете.',
+    when: 'каждые 5 минут; набор карточек утром в 06:25', rate: .35 },
+  { id: 'ai', k: 'ai', cl: 'sales', at: [0, 0], ic: 'spark', name: 'ИИ-аналитик', sub: 'разбор рекламы', tag: '07:30 · ИИ',
+    desc: 'Каждое утро разбирает рекламу всех магазинов за 7, 14 и 30 дней. Вместо таблиц выдаёт сигналы: где нужно решение.',
+    when: 'каждое утро в 07:30', rate: .12 },
+  { id: 'buyers', k: 'bot', cl: 'sales', at: [-135, 200], ic: 'userchat', name: 'Покупатели', sub: 'вопросы и чаты', tag: '5 МИН',
+    desc: 'Вопросы, чаты и заявки покупателей со всех 7 кабинетов собираются на одном сайте. Отвечать можно прямо оттуда.',
+    when: 'каждые 5 минут', rate: .35 },
+  { id: 'funnel', k: 'bot', cl: 'sales', at: [135, 200], ic: 'funnel', name: 'Аналитик продаж', sub: 'воронка и склады', tag: 'НОЧЬЮ',
+    desc: 'Ночью собирает остатки по складам ВБ, заказы для графиков, воронку продаж и то, сколько дней товар лежит до продажи.',
+    when: '04:10, 04:40, 05:10 и 05:20', rate: .08 },
+
+  // ---------- возвраты и потери ----------
+  { id: 'returns', k: 'bot', cl: 'loss', at: [-135, -100], ic: 'undo', name: 'Возвраты', sub: 'сбор и синк', tag: 'КАЖДЫЙ ЧАС',
+    desc: 'Собирает возвраты с ВБ каждый час. Себестоимость и комментарии к возвратам сами уходят в книгу поставщика каждые 15 минут.',
+    when: 'сбор каждый час, синк каждые 15 минут', rate: .25 },
+  { id: 'office', k: 'bot', cl: 'loss', at: [135, -100], ic: 'office', name: 'Офис', sub: 'остаток из чатов', tag: '10 МИН',
+    desc: 'Превращает рабочие чаты в продажи и отгрузки офиса и сверяет остаток. Никто не переписывает чаты в таблицу.',
+    when: 'чаты 4 раза в день, сверка каждые 10 минут', rate: .25 },
+  { id: 'revizia', k: 'bot', cl: 'loss', at: [0, 120], ic: 'search', name: 'Ревизор', sub: 'что ВБ должен', tag: 'КАЖДЫЙ ЧАС',
+    desc: 'Сверяет, сколько отгрузили, продали и вернули, и сколько лежит у ВБ. Разница — товар, который ВБ должен вернуть или оплатить. Ночью собирает лист «Ревизия ВБ».',
+    when: 'каждый час, лист в 01:30', rate: .2 },
+
+  // ---------- охрана ----------
+  { id: 'fuse', k: 'guard', cl: 'guard', at: [0, -100], ic: 'bolt', name: 'Предохранитель', sub: 'стоп при сбое данных', tag: 'ПЕРЕД ЗАПИСЬЮ',
+    desc: 'Стоит перед записью в таблицы. Заказов пришло на 40 % меньше, чем в прошлый раз, и запись отменяется, а Сторож сообщает. Если это новая норма, через 3 круга работа идёт дальше сама.',
+    when: 'при каждой записи', rate: .1 },
+  { id: 'guard', k: 'guard', cl: 'guard', at: [-135, 110], ic: 'shield', name: 'Сторож', sub: 'здоровье системы', tag: '20 МИН',
+    desc: 'Каждые 20 минут проверяет, что все роботы живы и данные свежие. Всё хорошо, молчит. Беда, сразу пишет в Telegram. В 09:00 присылает утреннюю сводку.',
+    when: 'каждые 20 минут и сводка в 09:00', rate: .25 },
+  { id: 'archive', k: 'guard', cl: 'guard', at: [135, 110], ic: 'archive', name: 'Архивариус', sub: 'копии всего', tag: 'НОЧЬЮ',
+    desc: 'Снимки таблиц в 09:00 и 21:00, копия всех книг в 07:41, копия базы в 03:30, весь сервер в облако в 03:45. Если что-то пошло не так, откатываемся на вчера.',
+    when: '03:30, 03:45, 07:41, 09:00 и 21:00', rate: .08 },
+
+  // ---------- куда приходит ----------
+  { id: 'sheets', k: 'out', cl: 'out', at: [-135, -110], ic: 'grid', name: 'Google-таблицы', sub: 'книги 7 магазинов', tag: 'ВСЕГДА СВЕЖИЕ',
+    desc: 'Привычные таблицы, которые заполняются сами: заказы, товар на ВБ, отчёты, финучёт, возвраты, ревизия.',
+    when: 'обновляются круглые сутки', rate: .3 },
+  { id: 'site', k: 'out', cl: 'out', at: [135, -110], ic: 'monitor', name: 'Сайт команда7.com', sub: 'дашборд, чаты, ИИ', tag: 'САЙТ',
+    desc: 'Деньги, товары и аналитика по 7 магазинам, ответы покупателям, чаты команды, поддержка и ИИ-чат. Пуши приходят на телефон.',
+    when: 'снимки данных каждые 30 минут', rate: .25 },
+  { id: 'bot', k: 'out', cl: 'out', at: [-135, 110], ic: 'send', name: 'Telegram-бот', sub: 'всё в кармане', tag: 'БОТ',
+    desc: 'Товар на ВБ, возвраты, ликвидность, задачи людям и тревоги Сторожа в одном боте. Каждый видит только своё.',
+    when: 'в любой момент', rate: .25 },
+  { id: 'db', k: 'out', cl: 'out', at: [135, 110], ic: 'db', name: 'База данных', sub: 'зеркало и чаты', tag: 'POSTGRES',
+    desc: 'Своя база: зеркало таблиц и переписка на сайте. Копия делается каждую ночь.',
+    when: 'копия в 03:30', rate: .12 },
+
+  // ---------- люди ----------
+  { id: 'tema', k: 'person', cl: 'people', at: [-135, -100], ch: 'Т', name: 'Тёма', sub: 'ведёт систему',
+    desc: 'Строит систему и ставит роботам новые задачи.' },
+  { id: 'vlad', k: 'person', cl: 'people', at: [135, -100], ch: 'В', name: 'Влад', sub: 'всё видно с телефона',
+    desc: 'Деньги, товар и тревоги видны в боте и на сайте, в любой момент.' },
+  { id: 'managers', k: 'person', cl: 'people', at: [-135, 100], ic: 'users', name: 'Менеджеры', sub: 'себес и отгрузки',
+    desc: 'Вносят цену закупки, отмечают отгрузки и отвечают покупателям. Остальное считают роботы.' },
+  { id: 'partner', k: 'person', cl: 'people', at: [135, 100], ic: 'user', name: 'Поставщик', sub: 'видит свой товар',
+    desc: 'Работает в своей книге и видит себестоимость и возвраты по своему товару, синхронно с нами.' },
+];
+
+const EDGES = [
+  ['wb', 'dispatch'], ['wb', 'prijom'], ['wb', 'fin'], ['wb', 'returns'], ['wb', 'revizia'], ['wb', 'buyers'],
+  ['wb', 'adv'], ['wb', 'funnel'], ['wb', 'spp'], ['wb', 'srez'],
+  ['banks', 'treasury'], ['banks', 'srez'], ['chats', 'office'], ['kassa', 'treasury'],
+  ['supplier', 'cost', 1], ['supplier', 'returns', 1],
+  ['dispatch', 'orders'], ['dispatch', 'stock'], ['dispatch', 'cost'], ['dispatch', 'fin'],
+  ['cost', 'stock'], ['cost', 'orders'], ['cost', 'fin'], ['cost', 'returns'], ['prijom', 'orders'],
+  ['treasury', 'srez'], ['office', 'srez'], ['fin', 'plan'], ['adv', 'ai'],
+  ['orders', 'fuse'], ['stock', 'fuse'], ['returns', 'fuse'], ['fin', 'fuse'],
+  ['fuse', 'sheets'], ['fuse', 'guard'],
+  ['revizia', 'sheets'], ['plan', 'sheets'], ['srez', 'sheets'], ['office', 'sheets'],
+  ['buyers', 'site'], ['adv', 'site'], ['ai', 'site'], ['funnel', 'site'], ['revizia', 'site'],
+  ['spp', 'bot'], ['treasury', 'bot'], ['guard', 'bot'],
+  ['sheets', 'site'], ['sheets', 'bot'], ['sheets', 'archive'], ['db', 'archive'], ['db', 'site', 1],
+  ['sheets', 'managers', 1], ['sheets', 'partner'], ['site', 'tema'], ['site', 'vlad'], ['site', 'managers'],
+  ['bot', 'tema'], ['bot', 'vlad'], ['bot', 'managers'],
+];
+
+/* сутки: события по МСК, минуты от полуночи (понедельник) */
+const DAILY = [
+  [20, 'srez', 'Срез «Точки А»: было → пришло → ушло → стало'],
+  [90, 'revizia', 'Ночная ревизия: лист «Ревизия ВБ»'],
+  [210, 'archive', 'Копия базы данных'],
+  [225, 'archive', 'Весь сервер уходит в облако'],
+  [250, 'funnel', 'Остатки на складах ВБ'],
+  [280, 'funnel', 'Заказы и возвраты для графиков'],
+  [310, 'funnel', 'Воронка продаж'],
+  [320, 'funnel', 'Сколько дней товар лежит до продажи'],
+  [385, 'spp', 'Набор карточек для СПП на день'],
+  [440, 'adv', 'Статистика рекламы'],
+  [450, 'ai', 'ИИ разбирает рекламу за 7, 14 и 30 дней'],
+  [460, 'adv', 'Поисковые фразы за неделю'],
+  [461, 'archive', 'Копия всех книг'],
+  [472, 'office', 'Выкачка рабочих чатов'],
+  [480, 'plan', 'Лист нового месяца, если до смены неделя'],
+  [490, 'plan', 'Блок следующего месяца в финучёте'],
+  [505, 'office', 'Чаты превращаются в продажи и отгрузки'],
+  [540, 'guard', 'Утренняя сводка: всё в норме'],
+  [541, 'archive', 'Снимок таблиц для отката'],
+  [600, 'bot', 'Напоминание о незакрытых задачах'],
+  [800, 'adv', 'Статистика рекламы'],
+  [832, 'office', 'Выкачка рабочих чатов'],
+  [865, 'office', 'Чаты превращаются в продажи и отгрузки'],
+  [900, 'plan', 'Книга «Оборот» по 7 магазинам'],
+  [930, 'plan', 'Прогноз прибыли'],
+  [1160, 'adv', 'Статистика рекламы'],
+  [1192, 'office', 'Выкачка рабочих чатов'],
+  [1225, 'office', 'Чаты превращаются в продажи и отгрузки'],
+  [1260, 'archive', 'Снимок таблиц для отката'],
+  [1410, 'office', 'Выкачка рабочих чатов'],
+];
+for (let i = 0; i < 7; i++) {
+  DAILY.push([600 + i * 5 + (i === 0 ? 1 : 0), 'fin', 'Отчёт ВБ за неделю · магазин ' + (i + 1)]);
+  DAILY.push([780 + i * 5, 'fin', 'Повтор: добрать отчёт, если ВБ опоздал · магазин ' + (i + 1)]);
+}
+DAILY.sort((a, b) => a[0] - b[0]);
+const HOURLY = { 5: ['returns'], 12: ['cost'], 16: ['site'], 25: ['site'], 27: ['site'], 30: ['revizia'], 31: ['site'],
+  40: ['plan'], 42: ['orders'], 46: ['site'], 47: ['plan'], 50: ['fin', 'plan'], 55: ['site'], 57: ['site'] };
+const FREQ = { dispatch: 1, prijom: 1, buyers: 5, treasury: 5, kassa: 5, spp: 5, office: 10, returns: 15, guard: 20 };
+
+const TICKER = 'ЗАКАЗ → ОТГРУЗКА → ПРИЁМКА → ПРОДАЖА → ДЕНЬГИ ◆ СЕБЕСТОИМОСТЬ ◆ ФИНОТЧЁТ ВБ ◆ ВОЗВРАТЫ ◆ РЕВИЗИЯ ◆ РЕКЛАМА ◆ СПП ◆ ОБОРОТ ◆ ЛИКВИДНОСТЬ ◆ ПРОГНОЗ ◆ ';
+
+/* ---------- scenes ---------- */
+const ALL = NODES.map(n => n.id);
+const STATS = [
+  [7, '', 'магазинов на ВБ', '#ffb547'],
+  [20, '', 'роботов на этой карте', '#9d7bff'],
+  [4400, '+', 'запусков в сутки', '#4fe3ff'],
+  [8700, '+', 'автопроверок кода', '#3eeaa8'],
+];
+const LEGEND = [['src', 'Источник', 'sq'], ['bot', 'Робот', 'hex'], ['ai', 'ИИ', 'hex'], ['guard', 'Охрана', 'hex'], ['out', 'Результат', 'sq'], ['person', 'Люди', 'ci']];
+
+const SCENES = [
+  { key: 'intro', accent: '#ff5ad9', eyebrow: 'MM Ярый · Wildberries', h1: 'Бизнес, который считает себя сам',
+    lead: 'Круглые сутки 20 роботов собирают заказы, считают себестоимость и деньги, ищут потери и пишут в Telegram, если что-то пошло не так. Людям остаются решения.',
+    extra: 'stats', hint: 'Листай вправо: покажу, кто что делает', next: 'Поехали', lit: 'all', cam: 'fly', edge: .5 },
+  { key: 'src', accent: '#ffb547', eyebrow: 'Откуда данные', title: 'Данные приходят сами',
+    lead: 'Роботы сами забирают всё нужное из кабинетов ВБ, банков, кассы, рабочих чатов и книги поставщика. Никто не выгружает отчёты и не копирует цифры.',
+    pts: ['<b>ВБ</b>: заказы, остатки, отчёты, реклама, возвраты, вопросы покупателей', '<b>Банки</b>: Модульбанк, Точка, Т-Бизнес', '<b>Чаты Telegram</b>: продажи и отгрузки офиса'],
+    lit: ['wb', 'banks', 'chats', 'kassa', 'supplier', 'dispatch'], cam: ['wb', 'banks', 'chats', 'kassa', 'supplier'], from: ['wb', 'banks', 'chats', 'kassa', 'supplier'] },
+  { key: 'hub', accent: '#ff5ad9', eyebrow: 'Сердце системы', title: 'Обход каждую минуту',
+    lead: 'Диспетчер похож на охранника на обходе: раз в минуту заходит в следующий магазин и обновляет заказы, остатки, себестоимость и финучёт.',
+    kicker: 'Раньше: выгрузка раз в неделю и вечер в Excel. Сейчас: открыл таблицу, а там свежие цифры.',
+    lit: ['dispatch', 'wb', 'orders', 'stock', 'cost', 'fin'], cam: ['dispatch'] },
+  { key: 'cost', accent: '#9d7bff', eyebrow: 'Себестоимость', title: 'Цена закупки не теряется',
+    lead: 'Менеджер вписывает цену один раз. Дальше роботы сами разносят её по остаткам, заказам, отчёту ВБ, финучёту и книге поставщика.',
+    pts: ['У каждой единицы своя цена: по номеру задания и стикеру', 'Ручную правку робот не затирает', 'Поставщик видит то же, что и мы'],
+    lit: ['supplier', 'cost', 'stock', 'orders', 'prijom', 'fin', 'returns', 'dispatch'], cam: ['orders', 'cost', 'prijom', 'stock'] },
+  { key: 'money', accent: '#3eeaa8', eyebrow: 'Деньги', title: 'Деньги видно каждый день',
+    lead: 'В понедельник Финансист сам разносит отчёты ВБ по 7 магазинам и сверяет их с кабинетом. Не сошлось, повторит через час. Казначей следит за счетами и кассой.',
+    pts: ['<b>00:20</b>: срез, сколько было, пришло, ушло и стало', '<b>15:30</b>: прогноз прибыли по 7 магазинам', 'Новый месяц в таблицах заводится сам'],
+    lit: ['fin', 'treasury', 'plan', 'srez', 'banks', 'kassa', 'wb', 'office', 'cost'], cam: ['fin', 'treasury', 'plan', 'srez'] },
+  { key: 'sales', accent: '#4fe3ff', eyebrow: 'Продажи и реклама', title: 'Продажи под присмотром',
+    lead: 'Вопросы покупателей со всех 7 кабинетов каждые 5 минут приходят на сайт. Отвечать можно прямо оттуда.',
+    pts: ['<b>07:30</b>: ИИ разбирает рекламу за 7, 14 и 30 дней', '<b>СПП</b> сдвинулась: приходит письмо «двигай цену»', 'Ночью: воронка, остатки по складам, оборачиваемость'],
+    lit: ['adv', 'spp', 'ai', 'buyers', 'funnel', 'wb', 'site', 'bot'], cam: ['adv', 'spp', 'ai', 'buyers', 'funnel'] },
+  { key: 'loss', accent: '#ffb547', eyebrow: 'Возвраты и потери', title: 'ВБ потерял — мы найдём',
+    lead: 'Ревизор каждый час сверяет, сколько отгрузили, продали и вернули, и сколько лежит у ВБ. Разница — товар, который ВБ должен вернуть или оплатить.',
+    pts: ['Ночью готов лист «Ревизия ВБ»: с ним идём за компенсацией', 'Возвраты собираются каждый час и сами уходят поставщику', 'Продажи и отгрузки офиса берутся прямо из чатов'],
+    lit: ['returns', 'office', 'revizia', 'wb', 'supplier', 'chats', 'cost'], cam: ['returns', 'office', 'revizia'] },
+  { key: 'guard', accent: '#ff6b7d', eyebrow: 'Защита от ошибок', title: 'Странные данные — стоп, а не каша',
+    lead: 'Если ВБ отдал пустоту или половину заказов, система не пишет мусор в таблицы. Она останавливается и сразу сообщает в Telegram, где сбой.',
+    pts: ['Заказов на 40 % меньше, чем в прошлый раз: запись отменяется', 'Это новая норма: через 3 круга работа идёт дальше сама', 'Копии таблиц и базы каждую ночь: можно откатиться на вчера'],
+    kicker: 'У многих это пока «важно заложить». У нас работает с июля.',
+    lit: ['fuse', 'guard', 'archive', 'orders', 'stock', 'returns', 'fin', 'sheets', 'db', 'bot'], cam: ['fuse', 'guard', 'archive'] },
+  { key: 'day', accent: '#4fe3ff', eyebrow: 'Сутки системы · понедельник', title: 'Пока все спят, система работает',
+    extra: 'clock', note: 'Каждую минуту работают Диспетчер и Приёмщик, каждые 5 минут — покупатели, касса и СПП. Всего 51 задание в расписании.',
+    lit: 'all', litLevel: .42, cam: 'all', edge: .28 },
+  { key: 'out', accent: '#3eeaa8', eyebrow: 'Результат', title: 'Всё в телефоне',
+    lead: 'Цифры сразу попадают в таблицы, на сайт команда7.com и в Telegram-бот. Каждый видит своё: доступ настраивается на человека.',
+    pts: ['<b>Сайт</b>: деньги, товары, аналитика, чаты, ИИ-чат', '<b>Бот</b>: товар на ВБ, возвраты, ликвидность, задачи', '<b>Пуши</b>: те же события сразу на телефон'],
+    lit: ['sheets', 'site', 'bot', 'db', 'tema', 'vlad', 'managers', 'partner'], cam: ['sheets', 'site', 'bot', 'db', 'tema', 'vlad'] },
+  { key: 'final', accent: '#ff5ad9', eyebrow: 'Итог', h1: 'Это уже работает. Каждый день.',
+    lead: '7 магазинов, 20 роботов, больше 4 400 запусков в сутки. Любой новый процесс можно отдать роботу, и он появится на этой карте.',
+    extra: 'again', next: 'Открыть карту', lit: 'all', cam: 'fly', edge: .5 },
+];
+
+/* =========================================================
+   STATE
+   ========================================================= */
+const $ = id => document.getElementById(id);
+const cvs = $('map'), ctx = cvs.getContext('2d');
+const card = $('card'), cardBody = $('cardBody'), dotsEl = $('dots');
+const sheet = $('sheet');
+const RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const byId = {};
+NODES.forEach(n => {
+  byId[n.id] = n;
+  n.shape = n.k === 'hub' ? 'hub' : (n.k === 'src' || n.k === 'out') ? 'sq' : n.k === 'person' ? 'ci' : 'hex';
+  n.r = n.r || (n.shape === 'sq' ? 40 : n.shape === 'ci' ? 38 : 44);
+  n.lit = 1; n.litT = 1; n.flash = 0; n.rings = []; n.hover = 0; n.rate = n.rate || 0;
+});
+const edges = EDGES.map(([a, b, bi], i) => ({ a: byId[a], b: byId[b], bi: !!bi, i, lit: .4, litT: .4, parts: [] }));
+edges.forEach(e => {
+  const n = 2;
+  for (let j = 0; j < n; j++) e.parts.push({ t: (j + Math.random() * .5) / n, dir: e.bi && j % 2 ? -1 : 1 });
+});
+
+let W = 0, H = 0, DPR = 1, mode = 'p', wide = false;
+let R = { x: 0, y: 0, w: 1, h: 1, cx: 0, cy: 0 };
+const cam = { x: 0, y: 300, s: .4 }, tgt = { x: 0, y: 300, s: .4 };
+let scene = 0, free = false, sel = null, time = 0, last = performance.now();
+let bbAll = null, followMode = null;
+let hubIdx = 0, hubTimer = 0, hubBeam = -9;
+let gT = 0;                                // guard scene script clock
+let simMin = 0, simPlay = true, simLastFollow = 0, feedItems = [];
+const stars = [], blobs = [];
+
+/* glow sprites */
+const GLOW = {}, CORE = {};
+function sprite(c, core) {
+  const s = 128, cv = document.createElement('canvas'); cv.width = cv.height = s;
+  const g = cv.getContext('2d'), gr = g.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+  if (core) { gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(.18, rgba(c, 1)); gr.addColorStop(.45, rgba(c, .28)); gr.addColorStop(1, rgba(c, 0)); }
+  else { gr.addColorStop(0, rgba(c, .55)); gr.addColorStop(.35, rgba(c, .18)); gr.addColorStop(1, rgba(c, 0)); }
+  g.fillStyle = gr; g.fillRect(0, 0, s, s); return cv;
+}
+for (const k in KIND) { GLOW[k] = sprite(KIND[k].rgb, false); CORE[k] = sprite(KIND[k].rgb, true); }
+const NEB = [sprite([120, 60, 255], false), sprite([255, 70, 200], false), sprite([40, 170, 230], false)];
+
+/* =========================================================
+   LAYOUT
+   ========================================================= */
+function hash(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
+function layout() {
+  NODES.forEach(n => { const c = CLUSTERS[n.cl][mode]; n.x = c[0] + n.at[0]; n.y = c[1] + n.at[1]; });
+  edges.forEach(e => {
+    const dx = e.b.x - e.a.x, dy = e.b.y - e.a.y, len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len, ny = dx / len, sign = hash(e.a.id + e.b.id) % 2 ? 1 : -1;
+    let bend;
+    if (mode === 'p') bend = len < 420 ? len * .14 : Math.min(len * .55, 880);
+    else bend = len < 420 ? len * .14 : Math.min(len * .2, 360);
+    e.cx = (e.a.x + e.b.x) / 2 + nx * bend * sign;
+    e.cy = (e.a.y + e.b.y) / 2 + ny * bend * sign;
+    let L = 0, px = e.a.x, py = e.a.y;
+    for (let k = 1; k <= 16; k++) { const p = bez(e, k / 16); L += Math.hypot(p[0] - px, p[1] - py); px = p[0]; py = p[1]; }
+    e.len = L;
+  });
+  bbAll = box(ALL);
+  bbAll.y0 -= 70; bbAll.h += 70; bbAll.cy -= 35;
+}
+function bez(e, t) { const u = 1 - t; return [u * u * e.a.x + 2 * u * t * e.cx + t * t * e.b.x, u * u * e.a.y + 2 * u * t * e.cy + t * t * e.b.y]; }
+function box(ids) {
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  ids.forEach(id => {
+    const n = byId[id], ex = n.shape === 'hub' ? 175 : Math.max(n.r * 1.6, 128);
+    const top = n.shape === 'hub' ? 190 : n.r + 46, bot = n.shape === 'hub' ? 215 : n.r + 70;
+    x0 = Math.min(x0, n.x - ex); x1 = Math.max(x1, n.x + ex); y0 = Math.min(y0, n.y - top); y1 = Math.max(y1, n.y + bot);
+  });
+  const p = 18;
+  return { x0: x0 - p, y0: y0 - p, x1: x1 + p, y1: y1 + p, w: x1 - x0 + 2 * p, h: y1 - y0 + 2 * p, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2 };
+}
+
+function measure() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight;
+  cvs.width = Math.round(W * DPR); cvs.height = Math.round(H * DPR);
+  const nw = W >= 820 && W > H * 1.1;
+  wide = nw;
+  const nm = nw ? 'l' : 'p';
+  if (nm !== mode || !bbAll) { mode = nm; layout(); }
+  if (!stars.length) seedSky();
+  rect();
+}
+function rect() {
+  const top = document.querySelector('.top').getBoundingClientRect().bottom + 6;
+  let r;
+  if (free) r = { x: 0, y: top, w: W, h: H - top - 64 };
+  else {
+    const c = card.getBoundingClientRect();
+    if (wide) r = { x: c.right + 16, y: top, w: W - c.right - 32, h: H - top - 20 };
+    else r = { x: 8, y: top, w: W - 16, h: Math.max(160, c.top - top - 6) };
+  }
+  r.cx = r.x + r.w / 2; r.cy = r.y + r.h / 2; R = r;
+}
+function seedSky() {
+  for (let i = 0; i < 170; i++) stars.push({ x: Math.random(), y: Math.random(), z: .2 + Math.random() * .8, r: Math.random() < .12 ? 1.4 : .7 + Math.random() * .5, tw: .4 + Math.random() * 1.6, ph: Math.random() * 6.28 });
+  blobs.push({ i: 0, x: .78, y: .22, r: 1.05, a: .55, sp: .05 }, { i: 1, x: .15, y: .72, r: .95, a: .32, sp: .04 }, { i: 2, x: .62, y: .95, r: .8, a: .22, sp: .06 }, { i: 0, x: .2, y: .1, r: .6, a: .25, sp: .07 });
+}
+
+/* =========================================================
+   CAMERA
+   ========================================================= */
+const MAXS = () => wide ? 1.0 : .82;
+function fit(b, maxS) {
+  const s = Math.min(R.w / b.w, R.h / b.h, maxS || MAXS());
+  return { x: b.cx, y: b.cy, s };
+}
+function sceneCam(snap) {
+  const sc = SCENES[scene];
+  followMode = null;
+  let t;
+  if (free) t = sel ? null : fit(bbAll);
+  else if (sc.cam === 'fly') { if (mode === 'p') { followMode = 'fly'; t = flyTarget(); } else t = fit(bbAll); }
+  else if (sc.cam === 'all') { if (mode === 'p' && sc.key === 'day') { followMode = 'day'; t = { x: 0, y: byId.srez.y, s: Math.min(.62, R.w / 620) }; } else t = fit(bbAll); }
+  else t = fit(box(sc.cam));
+  if (t) { tgt.x = t.x; tgt.y = t.y; tgt.s = t.s; }
+  if (snap) { cam.x = tgt.x; cam.y = tgt.y; cam.s = tgt.s; }
+}
+function flyTarget() {
+  const y0 = bbAll.y0 + 260, y1 = bbAll.y1 - 260;
+  const k = .5 - .5 * Math.cos(time * .07);
+  return { x: 0, y: y0 + (y1 - y0) * k, s: Math.min(.5, R.w / 700) };
+}
+function toWorld(sx, sy) { return [cam.x + (sx - R.cx) / cam.s, cam.y + (sy - R.cy) / cam.s]; }
+
+/* =========================================================
+   SCENES / CARD
+   ========================================================= */
+const fmt = v => v.toLocaleString('ru-RU').replace(/[  \s]/g, ' ');
+const SVG_SHAPE = {
+  sq: c => '<svg viewBox="0 0 14 14"><rect x="1.5" y="1.5" width="11" height="11" rx="3" fill="' + c + '"/></svg>',
+  hex: c => '<svg viewBox="0 0 14 14"><polygon points="7,1 12.2,4 12.2,10 7,13 1.8,10 1.8,4" fill="none" stroke="' + c + '" stroke-width="1.8"/></svg>',
+  ci: c => '<svg viewBox="0 0 14 14"><circle cx="7" cy="7" r="5.2" fill="none" stroke="' + c + '" stroke-width="1.8"/></svg>',
+};
+const I_PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="5" width="4" height="14" rx="1.2"/><rect x="13.5" y="5" width="4" height="14" rx="1.2"/></svg>';
+const I_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>';
+const I_AGAIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7 M4 4v4h4"/></svg>';
+
+function extraHTML(kind) {
+  if (kind === 'stats') {
+    return '<div class="stats">' + STATS.map(([v, suf, l, c]) =>
+      '<div class="stat" style="--c:' + c + '"><b data-count="' + v + '" data-suf="' + suf + '">' + fmt(v) + suf + '</b><span>' + l + '</span></div>').join('') + '</div>' +
+      '<div class="legend">' + LEGEND.map(([k, l, s]) => '<span>' + SVG_SHAPE[s](KIND[k].c) + l + '</span>').join('') + '</div>';
+  }
+  if (kind === 'clock') {
+    const ticks = DAILY.map(([m, id]) => '<i class="tl-tick" style="left:' + (m / 1440 * 100).toFixed(2) + '%;--c:' + KIND[byId[id].k].c + '"></i>').join('');
+    return '<div class="clock"><div class="clock-time" id="clk">00:00</div><div class="clock-meta"><span id="clkPhase">ночь</span><span>понедельник</span></div>' +
+      '<button class="ghost" id="dayPlay" type="button" aria-label="Пауза">' + I_PAUSE + '</button></div>' +
+      '<div class="tl" id="tl"><div class="tl-track">' + ticks + '</div><div class="tl-head" id="tlHead"></div>' +
+      '<div class="tl-hours"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div></div>' +
+      '<ul class="feed" id="feed"></ul>';
+  }
+  if (kind === 'again') return '<button class="again" type="button" data-act="restart">' + I_AGAIN + 'Смотреть сначала</button>';
+  return '';
+}
+function renderCard() {
+  const sc = SCENES[scene], n = String(scene + 1).padStart(2, '0'), tot = String(SCENES.length).padStart(2, '0');
+  let h = '<div class="eyebrow"><span class="n">' + n + '</span><span class="of">/ ' + tot + '</span><span>' + sc.eyebrow + '</span></div>';
+  h += sc.h1 ? '<h1>' + sc.h1 + '</h1>' : '<h2>' + sc.title + '</h2>';
+  if (sc.lead) h += '<p class="lead">' + sc.lead + '</p>';
+  if (sc.extra) h += extraHTML(sc.extra);
+  if (sc.pts) h += '<ul class="pts">' + sc.pts.map(p => '<li>' + p + '</li>').join('') + '</ul>';
+  if (sc.kicker) h += '<p class="kicker">' + sc.kicker + '</p>';
+  if (sc.note) h += '<p class="note">' + sc.note + '</p>';
+  if (sc.hint) h += '<p class="hint">' + sc.hint + '</p>';
+  cardBody.innerHTML = h;
+  cardBody.scrollTop = 0;
+  document.documentElement.style.setProperty('--accent', sc.accent);
+  $('nextLabel').textContent = sc.next || 'Дальше';
+  $('prev').disabled = scene === 0;
+  [...dotsEl.children].forEach((d, i) => { if (i === scene) d.setAttribute('aria-current', 'step'); else d.removeAttribute('aria-current'); });
+  if (sc.extra === 'stats' && !RM) countUp();
+  if (sc.extra === 'clock') bindClock();
+}
+function countUp() {
+  const els = cardBody.querySelectorAll('[data-count]'), t0 = performance.now();
+  (function step(now) {
+    const k = Math.min(1, (now - t0) / 1400), e = 1 - Math.pow(1 - k, 3);
+    els.forEach(el => { const v = +el.dataset.count; el.textContent = fmt(Math.round(v * e)) + el.dataset.suf; });
+    if (k < 1 && document.body.contains(els[0])) requestAnimationFrame(step);
+  })(t0);
+}
+function applyScene(i, snap) {
+  scene = Math.max(0, Math.min(SCENES.length - 1, i));
+  closeSheet();
+  const sc = SCENES[scene];
+  const set = sc.lit === 'all' ? null : new Set(sc.lit);
+  const from = sc.from ? new Set(sc.from) : null;
+  NODES.forEach(n => { n.litT = !set ? (sc.litLevel || 1) : set.has(n.id) ? 1 : .14; });
+  edges.forEach(e => {
+    if (!set) e.litT = sc.edge || .4;
+    else if (from) e.litT = (from.has(e.a.id) || (e.bi && from.has(e.b.id))) ? 1 : .04;
+    else e.litT = set.has(e.a.id) && set.has(e.b.id) ? 1 : .04;
+  });
+  if (sc.key === 'guard') gT = 0;
+  if (sc.key === 'day') { simMin = 0; simPlay = true; feedItems = []; simLastFollow = 0; }
+  renderCard();
+  requestAnimationFrame(() => { rect(); sceneCam(snap); });
+}
+const next = () => { if (scene === SCENES.length - 1) setFree(true); else applyScene(scene + 1); };
+const prev = () => { if (scene > 0) applyScene(scene - 1); };
+
+/* day clock */
+function bindClock() {
+  const btn = $('dayPlay');
+  btn.addEventListener('click', () => { simPlay = !simPlay; btn.innerHTML = simPlay ? I_PAUSE : I_PLAY; btn.setAttribute('aria-label', simPlay ? 'Пауза' : 'Играть'); });
+  const tl = $('tl');
+  const seek = e => { const r = tl.getBoundingClientRect(); simMin = Math.max(0, Math.min(1439, (e.clientX - r.left) / r.width * 1440)); feedItems = []; renderFeed(); };
+  tl.addEventListener('pointerdown', e => { e.stopPropagation(); tl.setPointerCapture(e.pointerId); seek(e); tl.onpointermove = seek; });
+  tl.addEventListener('pointerup', () => { tl.onpointermove = null; });
+  renderFeed();
+}
+function hhmm(m) { m = Math.floor(m) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
+function renderFeed() {
+  const f = $('feed'); if (!f) return;
+  f.innerHTML = feedItems.map(([m, id, txt]) => '<li style="--c:' + KIND[byId[id].k].c + '"><time>' + hhmm(m) + '</time><span>' + txt + '</span></li>').join('');
+}
+function phase(m) { const h = m / 60; return h < 5 ? 'ночь' : h < 11 ? 'утро' : h < 17 ? 'день' : h < 22 ? 'вечер' : 'ночь'; }
+
+/* =========================================================
+   FREE MODE + SHEET
+   ========================================================= */
+function setFree(on) {
+  free = on;
+  card.classList.toggle('off', on);
+  $('freebar').hidden = !on;
+  updateModeBtn();
+  closeSheet();
+  if (on) {
+    NODES.forEach(n => n.litT = 1);
+    edges.forEach(e => e.litT = .38);
+    followMode = null;
+    requestAnimationFrame(() => { rect(); const t = fit(bbAll); tgt.x = t.x; tgt.y = t.y; tgt.s = t.s; });
+  } else applyScene(scene);
+}
+function updateModeBtn() {
+  $('modeBtn').innerHTML = free
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14 M13 6l6 6-6 6"/></svg>Тур'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z M12 12l8-4.5 M12 12v9 M12 12L4 7.5"/></svg>Вся карта';
+}
+function neighbours(n) {
+  const ins = [], outs = [];
+  edges.forEach(e => {
+    if (e.b === n) ins.push(e.a);
+    if (e.a === n) outs.push(e.b);
+    if (e.bi && e.a === n) ins.push(e.b);
+    if (e.bi && e.b === n) outs.push(e.a);
+  });
+  const uniq = a => a.filter((x, i) => a.indexOf(x) === i);
+  return [uniq(ins), uniq(outs)];
+}
+const chip = m => '<button class="chip" type="button" data-id="' + m.id + '" style="--c:' + KIND[m.k].c + '"><i></i>' + m.name + '</button>';
+function openSheet(n) {
+  sel = n;
+  sheet.style.setProperty('--c', KIND[n.k].c);
+  $('sKind').innerHTML = '<span>' + KIND[n.k].name + '</span>' + (n.tag ? '<span class="s-tag">' + n.tag + '</span>' : '');
+  $('sName').textContent = n.name;
+  $('sSub').textContent = n.sub;
+  $('sDesc').textContent = n.desc;
+  $('sWhenRow').hidden = !n.when;
+  $('sWhen').textContent = n.when || '';
+  const [ins, outs] = neighbours(n);
+  $('sIn').innerHTML = ins.length ? ins.map(chip).join('') : '<span class="none">—</span>';
+  $('sOut').innerHTML = outs.length ? outs.map(chip).join('') : '<span class="none">—</span>';
+  sheet.classList.add('open'); sheet.setAttribute('aria-hidden', 'false'); sheet.scrollTop = 0;
+  fire(n, true);
+  if (free) {
+    const near = new Set([n, ...ins, ...outs]);
+    NODES.forEach(m => m.litT = near.has(m) ? 1 : .16);
+    edges.forEach(e => e.litT = (e.a === n || e.b === n) ? 1 : .03);
+    // glide: keep node in the visible part above / beside the sheet
+    const s = Math.max(cam.s, Math.min(.85, MAXS()));
+    let sx, sy;
+    if (wide) { sx = (R.x + (W - 430)) / 2; sy = R.cy; }
+    else { sx = W / 2; sy = R.y + (H * .26 - R.y) + 40; }
+    tgt.s = s; tgt.x = n.x - (sx - R.cx) / s; tgt.y = n.y - (sy - R.cy) / s;
+  }
+}
+function closeSheet() {
+  if (!sel) return;
+  sel = null;
+  sheet.classList.remove('open'); sheet.setAttribute('aria-hidden', 'true');
+  if (free) { NODES.forEach(m => m.litT = 1); edges.forEach(e => e.litT = .38); }
+}
+function hit(sx, sy) {
+  const [wx, wy] = toWorld(sx, sy);
+  let best = null, bd = 1e9;
+  NODES.forEach(n => {
+    const rr = n.shape === 'hub' ? 150 : n.r * 1.25 + 12 / cam.s;
+    const d = Math.hypot(wx - n.x, wy - n.y);
+    const inLabel = n.shape !== 'hub' && Math.abs(wx - n.x) < 110 && wy > n.y && wy < n.y + n.r + 64;
+    if ((d < rr || inLabel) && d < bd) { best = n; bd = d; }
+  });
+  return best;
+}
+
+/* =========================================================
+   INPUT
+   ========================================================= */
+const P = new Map();
+let downX = 0, downY = 0, downT = 0, moved = false, panLast = null, pinch = null;
+cvs.addEventListener('pointerdown', e => {
+  try { cvs.setPointerCapture(e.pointerId); } catch (_) {}
+  P.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (P.size === 1) { moved = false; downT = performance.now(); downX = e.clientX; downY = e.clientY; panLast = { x: e.clientX, y: e.clientY }; }
+  if (P.size === 2) {
+    const [a, b] = [...P.values()], mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    const w = toWorld(mx, my);
+    pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, s: cam.s, wx: w[0], wy: w[1] }; moved = true;
+  }
+});
+cvs.addEventListener('pointermove', e => {
+  if (!P.has(e.pointerId)) {
+    if (e.pointerType === 'mouse') { const n = hit(e.clientX, e.clientY); NODES.forEach(m => m.hoverT = m === n ? 1 : 0); cvs.classList.toggle('hover', !!n); }
+    return;
+  }
+  P.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (Math.hypot(e.clientX - downX, e.clientY - downY) > 8) moved = true;
+  if (!free) return;
+  followMode = null;
+  if (P.size === 1 && moved && panLast) {
+    cam.x -= (e.clientX - panLast.x) / cam.s; cam.y -= (e.clientY - panLast.y) / cam.s;
+    tgt.x = cam.x; tgt.y = cam.y; tgt.s = cam.s; panLast = { x: e.clientX, y: e.clientY };
+    cvs.classList.add('dragging');
+  } else if (P.size === 2 && pinch) {
+    const [a, b] = [...P.values()], d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    const s = Math.max(.08, Math.min(1.6, pinch.s * d / pinch.d));
+    cam.s = tgt.s = s; cam.x = tgt.x = pinch.wx - (mx - R.cx) / s; cam.y = tgt.y = pinch.wy - (my - R.cy) / s;
+  }
+});
+function endPtr(e) {
+  if (!P.has(e.pointerId)) return;
+  P.delete(e.pointerId);
+  if (P.size < 2) pinch = null;
+  if (P.size === 1) { const v = [...P.values()][0]; panLast = { x: v.x, y: v.y }; }
+  if (P.size === 0) {
+    cvs.classList.remove('dragging');
+    if (e.type === 'pointercancel') return;
+    const dx = e.clientX - downX, dy = e.clientY - downY, dt = performance.now() - downT;
+    if (!moved && dt < 500) {
+      const n = hit(e.clientX, e.clientY);
+      if (n) openSheet(n); else closeSheet();
+    } else if (!free && Math.abs(dx) > 50 && Math.abs(dx) > 1.4 * Math.abs(dy)) { dx < 0 ? next() : prev(); }
+  }
+}
+cvs.addEventListener('pointerup', endPtr);
+cvs.addEventListener('pointercancel', endPtr);
+cvs.addEventListener('wheel', e => {
+  if (!free) return;
+  e.preventDefault(); followMode = null;
+  const w = toWorld(e.clientX, e.clientY), s = Math.max(.08, Math.min(1.6, cam.s * Math.exp(-e.deltaY * .0016)));
+  cam.s = tgt.s = s; cam.x = tgt.x = w[0] - (e.clientX - R.cx) / s; cam.y = tgt.y = w[1] - (e.clientY - R.cy) / s;
+}, { passive: false });
+
+let cs = null;
+card.addEventListener('pointerdown', e => { cs = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+card.addEventListener('pointerup', e => {
+  if (!cs) return;
+  const dx = e.clientX - cs.x, dy = e.clientY - cs.y;
+  if (Math.abs(dx) > 60 && Math.abs(dx) > 1.5 * Math.abs(dy) && performance.now() - cs.t < 800) dx < 0 ? next() : prev();
+  cs = null;
+});
+card.addEventListener('pointercancel', () => { cs = null; });
+card.addEventListener('click', e => {
+  const a = e.target.closest('[data-act]'); if (!a) return;
+  if (a.dataset.act === 'restart') applyScene(0);
+});
+$('next').addEventListener('click', next);
+$('prev').addEventListener('click', prev);
+$('modeBtn').addEventListener('click', () => setFree(!free));
+$('tourBtn').addEventListener('click', () => setFree(false));
+$('fitBtn').addEventListener('click', () => { closeSheet(); const t = fit(bbAll); tgt.x = t.x; tgt.y = t.y; tgt.s = t.s; });
+$('sheetX').addEventListener('click', closeSheet);
+sheet.addEventListener('click', e => { const c = e.target.closest('.chip'); if (c) openSheet(byId[c.dataset.id]); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeSheet(); return; }
+  if (free) return;
+  if (e.target.closest && e.target.closest('.sheet')) return;
+  if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); next(); }
+  if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prev(); }
+});
+let rsT = 0;
+window.addEventListener('resize', () => { clearTimeout(rsT); rsT = setTimeout(() => { measure(); free ? setFree(true) : sceneCam(true); }, 80); });
+
+SCENES.forEach((s, i) => {
+  const b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-label', 'Шаг ' + (i + 1) + ': ' + (s.title || s.h1));
+  b.innerHTML = '<i></i>'; b.addEventListener('click', () => { if (free) setFree(false); applyScene(i); }); dotsEl.appendChild(b);
+});
+$('ticker').innerHTML = (('<span>' + TICKER.replace(/◆/g, '<b>◆</b>').replace(/→/g, '<i>→</i>') + '</span>').repeat(2)).repeat(2);
+
+/* =========================================================
+   SIMULATION
+   ========================================================= */
+function fire(n, big) {
+  n.rings.push({ t: time, big: !!big });
+  if (n.rings.length > 4) n.rings.shift();
+  n.flash = Math.max(n.flash, big ? 1 : .55);
+}
+function stepGuard(dt) {
+  gT += dt; if (gT > 4.6) gT = 0;
+  const f = byId.fuse;
+  if (gT >= 1.4 && gT - dt < 1.4) { fire(f, true); f.stop = time; }
+  if (gT >= 2.25 && gT - dt < 2.25) fire(byId.guard, true);
+  if (gT >= 3.1 && gT - dt < 3.1) fire(byId.bot, true);
+}
+function stepDay(dt) {
+  if (!simPlay) return;
+  const prevM = simMin;
+  simMin += dt * 24;
+  let wrapped = false;
+  if (simMin >= 1440) { simMin -= 1440; wrapped = true; feedItems = []; }
+  const a = Math.floor(wrapped ? 0 : prevM) + 1, b = Math.floor(simMin);
+  for (let m = (wrapped ? 0 : a); m <= b; m++) {
+    const hm = m % 60;
+    (HOURLY[hm] || []).forEach(id => { if (!(id === 'revizia' && m === 90)) fire(byId[id], false); });
+    DAILY.forEach(ev => {
+      if (ev[0] !== m) return;
+      const n = byId[ev[1]]; fire(n, true);
+      feedItems.unshift(ev); if (feedItems.length > 4) feedItems.pop();
+      renderFeed();
+      if (followMode === 'day' && time - simLastFollow > 1.2) { simLastFollow = time; tgt.x = n.x * .55; tgt.y = n.y; }
+    });
+  }
+  const c = $('clk');
+  if (c) {
+    c.textContent = hhmm(simMin);
+    $('clkPhase').textContent = phase(simMin);
+    $('tlHead').style.left = (simMin / 1440 * 100) + '%';
+  }
+}
+
+/* =========================================================
+   DRAW
+   ========================================================= */
+function hexPath(x, y, r) {
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) { const a = -Math.PI / 2 + i * Math.PI / 3; const px = x + r * Math.cos(a), py = y + r * Math.sin(a); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+  ctx.closePath();
+}
+function rr(x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+function icon(name, x, y, size, color, lw) {
+  ctx.save(); ctx.translate(x - size / 2, y - size / 2); ctx.scale(size / 24, size / 24);
+  ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke(ICON[name]); ctx.restore();
+}
+const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
+const FONT_B = '"Golos Text", system-ui, -apple-system, "Segoe UI", sans-serif';
+const FONT_M = '"JetBrains Mono", ui-monospace, Menlo, monospace';
+const FONT_D = '"Unbounded", "Golos Text", system-ui, sans-serif';
+
+function drawBackground() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = '#07051a'; ctx.fillRect(0, 0, W, H);
+  const M = Math.max(W, H);
+  ctx.globalCompositeOperation = 'lighter';
+  const px = cam.x * cam.s, py = cam.y * cam.s;
+  blobs.forEach((b, i) => {
+    const x = b.x * W + Math.sin(time * b.sp + i) * 50 - px * .02, y = b.y * H + Math.cos(time * b.sp * 1.3 + i) * 40 - (py * .015) % (H * .6);
+    const s = b.r * M; ctx.globalAlpha = b.a; ctx.drawImage(NEB[b.i], x - s / 2, y - s / 2, s, s);
+  });
+  if (SCENES[scene].key === 'day' && !free) {
+    const d = Math.max(0, Math.sin((simMin / 1440 - .25) * Math.PI * 2));
+    ctx.globalAlpha = .1 * d; ctx.fillStyle = '#5a3cc8'; ctx.fillRect(0, 0, W, H);
+  }
+  ctx.fillStyle = '#ffffff';
+  stars.forEach(st => {
+    let x = (st.x * W - px * st.z * .12) % W; if (x < 0) x += W;
+    let y = (st.y * H - py * st.z * .12) % H; if (y < 0) y += H;
+    ctx.globalAlpha = (.25 + .6 * Math.abs(Math.sin(time * st.tw + st.ph))) * st.z;
+    ctx.fillRect(x, y, st.r, st.r);
+  });
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+}
+
+function drawDecor() {
+  const s = cam.s, hub = byId.dispatch;
+  ctx.lineWidth = 1.2 / s;
+  ctx.setLineDash([2 / s, 9 / s]);
+  ctx.lineDashOffset = -time * 6 / s;
+  const radii = mode === 'l' ? [420, 760, 1100] : [300];
+  radii.forEach((r, i) => { ctx.strokeStyle = 'rgba(176,150,255,' + (.11 - i * .025) + ')'; ctx.beginPath(); ctx.arc(hub.x, hub.y, r, 0, Math.PI * 2); ctx.stroke(); });
+  ctx.setLineDash([]);
+  // cluster captions
+  const capA = clamp01((18 * s - 5) / 4);
+  if (capA > 0) {
+    ctx.font = '700 18px ' + FONT_M; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (const k in CLUSTERS) {
+      const c = CLUSTERS[k]; if (!c.label) continue;
+      let top = 1e9; NODES.forEach(n => { if (n.cl === k) top = Math.min(top, n.y - n.r - (n.tag ? 40 : 14)); });
+      const x = c[mode][0], y = top - 44, w = ctx.measureText(c.label).width;
+      ctx.globalAlpha = capA * .7; ctx.fillStyle = 'rgba(200,185,255,.75)'; ctx.fillText(c.label, x, y);
+      ctx.strokeStyle = 'rgba(176,150,255,.3)'; ctx.lineWidth = 1.5 / s;
+      ctx.beginPath(); ctx.moveTo(x - w / 2 - 18, y); ctx.lineTo(x - w / 2 - 70, y); ctx.moveTo(x + w / 2 + 18, y); ctx.lineTo(x + w / 2 + 70, y); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawEdges() {
+  const s = cam.s;
+  edges.forEach(e => {
+    const L = e.lit, ca = KIND[e.a.k].rgb, cb = KIND[e.b.k].rgb;
+    const a = .05 + L * .45;
+    if (L > .12) {
+      const g = ctx.createLinearGradient(e.a.x, e.a.y, e.b.x, e.b.y);
+      g.addColorStop(0, rgba(ca, a)); g.addColorStop(1, rgba(cb, a));
+      ctx.strokeStyle = g;
+    } else ctx.strokeStyle = 'rgba(176,150,255,' + a + ')';
+    ctx.lineWidth = (1 + L * 1.3) / s;
+    ctx.beginPath(); ctx.moveTo(e.a.x, e.a.y); ctx.quadraticCurveTo(e.cx, e.cy, e.b.x, e.b.y); ctx.stroke();
+  });
+}
+function drawParticles(dt) {
+  const s = cam.s;
+  ctx.globalCompositeOperation = 'lighter';
+  const core = (5 + 5 * Math.min(1, s * 1.4)) / s;
+  edges.forEach(e => {
+    const L = e.lit; if (L < .03) return;
+    const speed = (RM ? 60 : 150 + 170 * L);
+    e.parts.forEach(p => {
+      p.t += p.dir * speed * dt / e.len;
+      if (p.t > 1) p.t -= 1; if (p.t < 0) p.t += 1;
+      const spr = CORE[(p.dir > 0 ? e.a : e.b).k];
+      for (let k = 0; k < 5; k++) {
+        const t = p.t - p.dir * k * (9 / s) / e.len; if (t < 0 || t > 1) continue;
+        const q = bez(e, t), sz = core * (k ? 1 - k * .16 : 1.15);
+        ctx.globalAlpha = (k ? .45 - k * .08 : 1) * (.1 + .9 * L);
+        ctx.drawImage(spr, q[0] - sz, q[1] - sz, sz * 2, sz * 2);
+      }
+    });
+  });
+  // guard scene: a bad packet hits the fuse, alert travels to the bot
+  if (!free && SCENES[scene].key === 'guard') {
+    const seg = (a, b, t0, t1, kind, big) => {
+      if (gT < t0 || gT > t1) return;
+      const e = edges.find(x => x.a.id === a && x.b.id === b); if (!e) return;
+      const q = bez(e, (gT - t0) / (t1 - t0)), sz = core * (big ? 2.6 : 1.9);
+      ctx.globalAlpha = 1; ctx.drawImage(CORE[kind], q[0] - sz, q[1] - sz, sz * 2, sz * 2);
+    };
+    seg('orders', 'fuse', 0, 1.4, 'guard', true);
+    seg('fuse', 'guard', 1.45, 2.25, 'guard', false);
+    seg('guard', 'bot', 2.3, 3.1, 'guard', false);
+  }
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+}
+
+function drawTag(n, text, y, color, alpha) {
+  if (alpha <= 0) return;
+  ctx.font = '700 15px ' + FONT_M; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const w = ctx.measureText(text).width + 22, h = 27;
+  ctx.globalAlpha = alpha;
+  rr(n.x - w / 2, y - h / 2, w, h, h / 2);
+  ctx.fillStyle = 'rgba(10,6,26,.92)'; ctx.fill();
+  ctx.strokeStyle = rgba(color, .85); ctx.lineWidth = 1.6; ctx.stroke();
+  ctx.fillStyle = rgba(color, 1); ctx.fillText(text, n.x, y + 1);
+}
+function drawLabels(n, yName, A) {
+  const s = cam.s;
+  const na = clamp01((28 * s - 6.5) / 4) * A, sa = clamp01((19 * s - 7) / 3) * A;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  if (na > 0) { ctx.globalAlpha = na; ctx.font = '700 28px ' + FONT_B; ctx.fillStyle = '#f4f0ff'; ctx.fillText(n.name, n.x, yName); }
+  if (sa > 0) { ctx.globalAlpha = sa * .9; ctx.font = '500 19px ' + FONT_B; ctx.fillStyle = '#b9afe0'; ctx.fillText(n.sub, n.x, yName + 25); }
+}
+
+function drawNode(n) {
+  const K = KIND[n.k], c = K.rgb, L = n.lit, s = cam.s;
+  const A = .3 + .7 * L, F = n.flash, hv = n.hover || 0;
+  // glow
+  ctx.globalCompositeOperation = 'lighter';
+  const gs = n.r * (n.shape === 'sq' ? 4.2 : 4.6) * (1 + F * .35 + hv * .15);
+  ctx.globalAlpha = Math.min(1, (.12 + .45 * L) + F * .55 + hv * .2);
+  ctx.drawImage(GLOW[n.k], n.x - gs / 2, n.y - gs / 2, gs, gs);
+  ctx.globalCompositeOperation = 'source-over';
+  // pulse rings
+  n.rings = n.rings.filter(p => time - p.t < (p.big ? 1.6 : 1.1));
+  n.rings.forEach(p => {
+    const k = (time - p.t) / (p.big ? 1.6 : 1.1);
+    ctx.globalAlpha = (1 - k) * (p.big ? .9 : .55) * A;
+    ctx.strokeStyle = rgba(c, 1); ctx.lineWidth = (p.big ? 3 : 2) / Math.max(s, .35);
+    ctx.beginPath();
+    const rad = n.r * (1.1 + k * (p.big ? 1.8 : 1.1));
+    if (n.shape === 'hex' || n.shape === 'hub') ctx.arc(n.x, n.y, rad, 0, Math.PI * 2);
+    else rr(n.x - rad, n.y - rad, rad * 2, rad * 2, rad * .35);
+    ctx.stroke();
+  });
+  ctx.globalAlpha = A;
+  if (n.shape === 'hex') {
+    // orbit dots
+    ctx.setLineDash([1.5, 8]); ctx.lineDashOffset = -time * 14;
+    ctx.strokeStyle = rgba(c, .55 * L + .1); ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(n.x, n.y, n.r * 1.42, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
+    const g = ctx.createRadialGradient(n.x, n.y - n.r * .3, 0, n.x, n.y, n.r);
+    g.addColorStop(0, rgba(c, .32 + F * .3)); g.addColorStop(1, 'rgba(13,8,32,.96)');
+    hexPath(n.x, n.y, n.r); ctx.fillStyle = g; ctx.fill();
+    ctx.strokeStyle = rgba(c, .95); ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.stroke();
+    hexPath(n.x, n.y, n.r * .8); ctx.strokeStyle = rgba(c, .22); ctx.lineWidth = 1.5; ctx.stroke();
+    icon(n.ic, n.x, n.y, n.r * .95, rgba([255, 255, 255], .95), 1.9);
+  } else if (n.shape === 'sq') {
+    const sz = n.r * 1.8, x = n.x - sz / 2, y = n.y - sz / 2;
+    ctx.setLineDash([1.5, 8]); ctx.lineDashOffset = time * 10;
+    ctx.strokeStyle = rgba(c, .4 * L + .08); ctx.lineWidth = 2; ctx.lineCap = 'round';
+    rr(x - 12, y - 12, sz + 24, sz + 24, 22); ctx.stroke(); ctx.setLineDash([]);
+    const g = ctx.createLinearGradient(x, y, x, y + sz);
+    g.addColorStop(0, rgba(c.map(v => Math.min(255, v + 40)), 1)); g.addColorStop(1, rgba(c.map(v => v * .55), 1));
+    rr(x, y, sz, sz, 18); ctx.fillStyle = g; ctx.fill();
+    ctx.save(); rr(x, y, sz, sz, 18); ctx.clip();
+    const hl = ctx.createLinearGradient(x, y, x, y + sz * .5); hl.addColorStop(0, 'rgba(255,255,255,.35)'); hl.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = hl; ctx.fillRect(x, y, sz, sz * .5); ctx.restore();
+    ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1.5; rr(x, y, sz, sz, 18); ctx.stroke();
+    icon(n.ic, n.x, n.y + 1, n.r * 1.05, 'rgba(20,9,42,.92)', 2.1);
+  } else if (n.shape === 'ci') {
+    ctx.setLineDash([1.5, 8]); ctx.lineDashOffset = -time * 10;
+    ctx.strokeStyle = rgba(c, .45 * L + .08); ctx.lineWidth = 2; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(n.x, n.y, n.r * 1.4, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+    const g = ctx.createRadialGradient(n.x, n.y - n.r * .4, 0, n.x, n.y, n.r);
+    g.addColorStop(0, rgba(c, .3)); g.addColorStop(1, 'rgba(26,14,44,.96)');
+    ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2); ctx.fillStyle = g; ctx.fill();
+    ctx.strokeStyle = rgba(c, .95); ctx.lineWidth = 3; ctx.stroke();
+    if (n.ch) { ctx.font = '700 30px ' + FONT_D; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = rgba(c, 1); ctx.fillText(n.ch, n.x, n.y + 2); }
+    else icon(n.ic, n.x, n.y, n.r * 1.05, rgba(c, 1), 1.9);
+  }
+  // tag + labels
+  const ta = clamp01((15 * s - 5.5) / 3) * A;
+  // the fuse's STOP plate takes the place of its usual tag, so it never climbs onto the cluster caption
+  const tagY = n.y - n.r - (n.shape === 'hex' ? 30 : 34);
+  const stopA = (n.id === 'fuse' && n.stop && time - n.stop < 1.6 && !free && SCENES[scene].key === 'guard')
+    ? clamp01(Math.min((time - n.stop) * 8, (1.6 - (time - n.stop)) * 3)) : 0;
+  if (n.tag) drawTag(n, n.tag, tagY, c, ta * (1 - stopA));
+  if (stopA > 0) drawTag(n, 'СТОП: ДАННЫХ НА 40 % МЕНЬШЕ', tagY, KIND.guard.rgb, stopA);
+  drawLabels(n, n.y + n.r + (n.shape === 'hex' ? 46 : 42), A);
+  ctx.globalAlpha = 1;
+}
+
+function drawHub(n) {
+  const c = KIND.hub.rgb, s = cam.s, L = n.lit, A = .35 + .65 * L, F = n.flash;
+  ctx.globalCompositeOperation = 'lighter';
+  const gs = 520 * (1 + F * .15);
+  ctx.globalAlpha = .35 + .4 * L; ctx.drawImage(GLOW.hub, n.x - gs / 2, n.y - gs / 2, gs, gs);
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalAlpha = A;
+  // satellites ring
+  const SR = 132, rot = time * .12;
+  ctx.strokeStyle = rgba(c, .25); ctx.lineWidth = 1.5; ctx.setLineDash([2, 7]); ctx.lineDashOffset = time * 8;
+  ctx.beginPath(); ctx.arc(n.x, n.y, SR, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+  for (let i = 0; i < 7; i++) {
+    const a = rot + i / 7 * Math.PI * 2 - Math.PI / 2, x = n.x + SR * Math.cos(a), y = n.y + SR * Math.sin(a);
+    const act = i === hubIdx, k = act ? Math.max(0, 1 - (time - hubBeam) / 1.1) : 0;
+    if (act && k > 0) {
+      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = k * A;
+      const g = ctx.createLinearGradient(n.x, n.y, x, y); g.addColorStop(0, rgba(c, 0)); g.addColorStop(1, rgba(c, .9));
+      ctx.strokeStyle = g; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(x, y); ctx.stroke();
+      ctx.drawImage(GLOW.hub, x - 60, y - 60, 120, 120);
+      ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = A;
+    }
+    ctx.beginPath(); ctx.arc(x, y, 15, 0, Math.PI * 2);
+    ctx.fillStyle = act && k > 0 ? rgba(c, .35 + .65 * k) : 'rgba(18,10,40,.95)'; ctx.fill();
+    ctx.strokeStyle = rgba(c, .9); ctx.lineWidth = 2; ctx.stroke();
+    ctx.font = '700 14px ' + FONT_M; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = act && k > .3 ? '#14092a' : rgba(c, 1); ctx.fillText(String(i + 1), x, y + 1);
+  }
+  // text ring
+  const TR = 92, str = 'ДИСПЕТЧЕР ◆ ОБХОД КАЖДУЮ МИНУТУ ◆ 7 МАГАЗИНОВ ◆ БЕЗ ВЫХОДНЫХ ◆ ', ch = [...str];
+  ctx.font = '700 12px ' + FONT_M; ctx.fillStyle = rgba(c, .9); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const r0 = -time * .18;
+  ch.forEach((t, i) => {
+    const a = r0 + i / ch.length * Math.PI * 2;
+    ctx.save(); ctx.translate(n.x + TR * Math.cos(a), n.y + TR * Math.sin(a)); ctx.rotate(a + Math.PI / 2); ctx.fillText(t, 0, 0); ctx.restore();
+  });
+  // core
+  const g = ctx.createRadialGradient(n.x, n.y - 20, 0, n.x, n.y, n.r);
+  g.addColorStop(0, rgba(c, .55 + F * .3)); g.addColorStop(.6, rgba(c.map(v => v * .35), 1)); g.addColorStop(1, 'rgba(24,8,40,1)');
+  ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2); ctx.fillStyle = g; ctx.fill();
+  ctx.strokeStyle = rgba(c, 1); ctx.lineWidth = 3.5; ctx.stroke();
+  ctx.beginPath(); ctx.arc(n.x, n.y, n.r + 9, -time * 1.4, -time * 1.4 + Math.PI * .6); ctx.strokeStyle = rgba(c, .8); ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.stroke();
+  ctx.beginPath(); ctx.arc(n.x, n.y, n.r + 9, -time * 1.4 + Math.PI, -time * 1.4 + Math.PI * 1.6); ctx.stroke();
+  ctx.save(); ctx.translate(n.x, n.y); ctx.rotate(time * .9); icon('cycle', 0, 0, 58, '#ffffff', 2.2); ctx.restore();
+  // rings
+  n.rings = n.rings.filter(p => time - p.t < 1.2);
+  n.rings.forEach(p => { const k = (time - p.t) / 1.2; ctx.globalAlpha = (1 - k) * .7 * A; ctx.strokeStyle = rgba(c, 1); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(n.x, n.y, n.r * (1 + k * .9), 0, Math.PI * 2); ctx.stroke(); });
+  ctx.globalAlpha = A;
+  drawTag(n, n.tag, n.y - SR - 40, c, clamp01((15 * s - 5.5) / 3) * A);
+  drawLabels(n, n.y + SR + 52, A);
+  ctx.globalAlpha = 1;
+}
+
+function vignette() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const g = ctx.createRadialGradient(W / 2, H * .45, Math.min(W, H) * .35, W / 2, H * .5, Math.max(W, H) * .8);
+  g.addColorStop(0, 'rgba(4,2,14,0)'); g.addColorStop(1, 'rgba(4,2,14,.6)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+}
+
+/* =========================================================
+   LOOP
+   ========================================================= */
+function frame(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now; time += dt;
+  const sc = SCENES[scene], isDay = !free && sc.key === 'day';
+  // camera
+  if (followMode === 'fly') { const t = flyTarget(); tgt.x = t.x; tgt.y = t.y; tgt.s = t.s; }
+  const k = RM ? 1 : 1 - Math.exp(-dt * 3.2);
+  cam.x += (tgt.x - cam.x) * k; cam.y += (tgt.y - cam.y) * k;
+  cam.s = Math.exp(Math.log(cam.s) + (Math.log(tgt.s) - Math.log(cam.s)) * k);
+  // lit easing, flashes, ambient activity
+  const kl = 1 - Math.exp(-dt * 4);
+  NODES.forEach(n => {
+    n.lit += (n.litT - n.lit) * kl;
+    n.hover = (n.hover || 0) + ((n.hoverT || 0) - (n.hover || 0)) * kl;
+    n.flash *= Math.exp(-dt * 2.4);
+    if (isDay) {
+      const f = FREQ[n.id]; if (f && Math.random() < dt / Math.max(.35, f * .12)) fire(n, false);
+    } else if (n.rate && n.lit > .6 && !RM && Math.random() < n.rate * dt) fire(n, false);
+  });
+  edges.forEach(e => { e.lit += (e.litT - e.lit) * kl; });
+  // hub cycle
+  hubTimer += dt;
+  const hubStep = isDay ? .3 : 1.05;
+  if (hubTimer > hubStep) { hubTimer = 0; hubIdx = (hubIdx + 1) % 7; hubBeam = time; fire(byId.dispatch, false); }
+  if (!free && sc.key === 'guard') stepGuard(dt);
+  if (isDay) stepDay(dt);
+
+  drawBackground();
+  ctx.setTransform(DPR * cam.s, 0, 0, DPR * cam.s, DPR * (R.cx - cam.x * cam.s), DPR * (R.cy - cam.y * cam.s));
+  drawDecor();
+  drawEdges();
+  drawParticles(dt);
+  NODES.forEach(n => n.shape === 'hub' ? drawHub(n) : drawNode(n));
+  vignette();
+  requestAnimationFrame(frame);
+}
+
+/* =========================================================
+   BOOT
+   ========================================================= */
+updateModeBtn();
+measure();
+applyScene(0, true);
+requestAnimationFrame(t => { last = t; rect(); sceneCam(true); requestAnimationFrame(frame); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { rect(); sceneCam(false); });
+})();
+</script>
+</body>
+</html>
